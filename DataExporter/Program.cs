@@ -12,7 +12,7 @@ namespace DataExporter
 
             builder.Services.AddControllers();
             builder.Services.AddDbContext<ExporterDbContext>();
-            builder.Services.AddScoped<PolicyService>();
+            builder.Services.AddScoped<IPolicyService, PolicyService>();
 
             var app = builder.Build();
 

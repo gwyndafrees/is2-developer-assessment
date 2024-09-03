@@ -8,9 +8,9 @@ namespace DataExporter.Controllers
     [Route("[controller]")]
     public class PoliciesController : ControllerBase
     {
-        private PolicyService _policyService;
+        private readonly IPolicyService _policyService;
 
-        public PoliciesController(PolicyService policyService) 
+        public PoliciesController(IPolicyService policyService) 
         { 
             _policyService = policyService;
         }
@@ -20,8 +20,7 @@ namespace DataExporter.Controllers
         {         
             return Ok();
         }
-
-
+        
         [HttpGet]
         public async Task<IActionResult> GetPolicies()
         {
@@ -29,12 +28,13 @@ namespace DataExporter.Controllers
         }
 
         [HttpGet("{policyId}")]
-        public async Task<IActionResult> GetPolicy(int id)
+        public async Task<IActionResult> GetPolicy(int policyId)
         {
-            return Ok(_policyService.ReadPolicyAsync(id));
+            // Awaited the async method
+            var result = await _policyService.ReadPolicyAsync(policyId);
+            return result == null ? NotFound() : Ok(result);
         }
-
-
+        
         [HttpPost("export")]
         public async Task<IActionResult> ExportData([FromQuery]DateTime startDate, [FromQuery] DateTime endDate)
         {

@@ -1,0 +1,13 @@
+﻿@kestrelPort = 7246
+@iisPort = 44352
+@baseUrl = https://localhost:{{kestrelPort}}
+
+@policyId = 1
+@nonExistentPolicyId = 100
+
+### GetPolicy - 200
+
+GET {{baseUrl}}/Policies/{{policyId}}
+
+### GetPolicy - 404
+GET {{baseUrl}}/Policies/{{nonExistentPolicyId}}
