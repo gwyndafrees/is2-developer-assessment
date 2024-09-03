@@ -1,4 +1,5 @@
 ﻿using DataExporter.Dtos;
+using Microsoft.EntityFrameworkCore;
 
 namespace DataExporter.Services;
 
@@ -26,9 +27,19 @@ public class PolicyService : IPolicyService
     /// Retrieves all policies.
     /// </summary>
     /// <returns>Returns a list of ReadPoliciesDto.</returns>
-    public async Task<IList<ReadPolicyDto>> ReadPoliciesAsync()
+    public async Task<IList<ReadPolicyDto>> ReadPoliciesAsync(CancellationToken cancellationToken = default)
     {
-        return await Task.FromResult(new List<ReadPolicyDto>());
+        var policies = await _dbContext.Policies
+            .Select(x => new ReadPolicyDto
+            {
+                Id = x.Id,
+                PolicyNumber = x.PolicyNumber,
+                Premium = x.Premium,
+                StartDate = x.StartDate
+            })
+            .ToListAsync(cancellationToken);
+        
+        return policies;
     }
 
     /// <summary>
