@@ -28,18 +28,21 @@ namespace DataExporter.Controllers
             return Ok(await _policyService.ReadPoliciesAsync());
         }
 
+        // Changed the parameter name to match the method attribute parameter name
         [HttpGet("{policyId}")]
         public async Task<IActionResult> GetPolicy(int policyId)
         {
             // Awaited the async method
             var result = await _policyService.ReadPolicyAsync(policyId);
+            
+            // Added a null check and return NotFound if the result is null
             return result == null ? NotFound() : Ok(result);
         }
         
         [HttpPost("export")]
         public async Task<IActionResult> ExportData([FromQuery]DateTime startDate, [FromQuery] DateTime endDate)
         {
-            return Ok();
+            return Ok(await _policyService.ExportDataAsync(startDate, endDate));
         }
     }
 }

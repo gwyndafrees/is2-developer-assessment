@@ -12,6 +12,10 @@ public class PolicyServiceTests
     private readonly PolicyService _policyService;
     private readonly ExporterDbContext _dbContext;
     private readonly ILogger<PolicyService> _logger = Substitute.For<ILogger<PolicyService>>();
+    private readonly DateTime _now = new(2024, 1, 1);
+    
+    private const string TestPolicyNumber1 = "123";
+    private const int TestPremium1 = 100;
     
     public PolicyServiceTests()
     {
@@ -30,8 +34,8 @@ public class PolicyServiceTests
         // Arrange
         var policy = new Policy
         {
-            PolicyNumber = "123",
-            Premium = 100
+            PolicyNumber = TestPolicyNumber1,
+            Premium = TestPremium1
         };
         
         _dbContext.Policies.Add(policy);
@@ -57,12 +61,10 @@ public class PolicyServiceTests
     public async Task ReadPolicyAsync_ShouldReturnNull_WhenPolicyDoesNotExist()
     {
         // Arrange
-        
-        // Getting the maximum id and incrementing it by 1 to account for policy seeding
-        var id = _dbContext.Policies.Max(p => p.Id) + 1;
+        const int nonExistentId = -1;
         
         // Act
-        var result = await _policyService.ReadPolicyAsync(id);
+        var result = await _policyService.ReadPolicyAsync(nonExistentId);
         
         // Assert
         result.Should().BeNull();
@@ -74,8 +76,8 @@ public class PolicyServiceTests
         // Arrange
         var policy = new Policy
         {
-            PolicyNumber = "123",
-            Premium = 100
+            PolicyNumber = TestPolicyNumber1,
+            Premium = TestPremium1
         };
         
         _dbContext.Policies.Add(policy);
@@ -97,8 +99,8 @@ public class PolicyServiceTests
         // Arrange
         var policy1 = new Policy
         {
-            PolicyNumber = "123",
-            Premium = 100
+            PolicyNumber = TestPolicyNumber1,
+            Premium = TestPremium1
         };
         
         var policy2 = new Policy
@@ -155,9 +157,9 @@ public class PolicyServiceTests
         // Arrange
         var createPolicyDto = new CreatePolicyDto
         {
-            PolicyNumber = "123",
-            Premium = 100,
-            StartDate = DateTime.Now
+            PolicyNumber = TestPolicyNumber1,
+            Premium = TestPremium1,
+            StartDate = _now
         };
         
         // Act
@@ -178,8 +180,8 @@ public class PolicyServiceTests
         var createPolicyDto = new CreatePolicyDto
         {
             PolicyNumber = null!,
-            Premium = 100,
-            StartDate = DateTime.Now
+            Premium = TestPremium1,
+            StartDate = _now
         };
         
         // Act
@@ -196,8 +198,8 @@ public class PolicyServiceTests
         var createPolicyDto = new CreatePolicyDto
         {
             PolicyNumber = null!,
-            Premium = 100,
-            StartDate = DateTime.Now
+            Premium = TestPremium1,
+            StartDate = _now
         };
         
         await _dbContext.SaveChangesAsync();
@@ -209,5 +211,78 @@ public class PolicyServiceTests
         await act.Should().NotThrowAsync<Exception>();
         _logger.Received().Log(LogLevel.Error, Arg.Any<EventId>(), Arg.Any<object>(), Arg.Any<Exception>(),
             Arg.Any<Func<object, Exception, string>>()!);
+    }
+    
+    [Fact]
+    public async Task ExportDataAsync_ShouldReturnListOfExportDto_WhenPoliciesExistWithinDateRange()
+    {
+        // Arrange
+        var policy1 = new Policy
+        {
+            PolicyNumber = TestPolicyNumber1,
+            Premium = TestPremium1,
+            StartDate = new DateTime(2024, 1, 1)
+        };
+
+        var policy2 = new Policy
+        {
+            PolicyNumber = "456",
+            Premium = 200,
+            StartDate = new DateTime(2024, 2, 1)
+        };
+
+        _dbContext.Policies.AddRange(policy1, policy2);
+        await _dbContext.SaveChangesAsync();
+
+        var expectedPolicyDto1 = new ExportDto
+        {
+            PolicyNumber = policy1.PolicyNumber,
+            Premium = policy1.Premium,
+            StartDate = policy1.StartDate,
+            Notes = new List<string>()
+        };
+        
+        var expectedPolicyDto2 = new ExportDto
+        {
+            PolicyNumber = policy2.PolicyNumber,
+            Premium = policy2.Premium,
+            StartDate = policy2.StartDate,
+            Notes = new List<string>()
+        };
+        
+        var startDate = new DateTime(2024, 1, 1);
+        var endDate = new DateTime(2024, 3, 1);
+
+        // Act
+        var result = await _policyService.ExportDataAsync(startDate, endDate);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().ContainEquivalentOf(expectedPolicyDto1);
+        result.Should().ContainEquivalentOf(expectedPolicyDto2);
+    }
+
+    [Fact]
+    public async Task ExportDataAsync_ShouldReturnEmptyList_WhenNoPoliciesExistWithinDateRange()
+    {
+        // Arrange
+        var policy = new Policy
+        {
+            PolicyNumber = TestPolicyNumber1,
+            Premium = TestPremium1,
+            StartDate = new DateTime(2024, 09, 4)
+        };
+
+        _dbContext.Policies.Add(policy);
+        await _dbContext.SaveChangesAsync();
+
+        var startDate = new DateTime(2000, 1, 1);
+        var endDate = new DateTime(2000, 3, 1);
+
+        // Act
+        var result = await _policyService.ExportDataAsync(startDate, endDate);
+
+        // Assert
+        result.Should().BeEmpty();
     }
 }

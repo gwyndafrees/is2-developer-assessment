@@ -83,7 +83,7 @@ public class PolicyService : IPolicyService
         
         return policies;
     }
-
+    
     /// <summary>
     /// Retrieves a policy by id.
     /// </summary>
@@ -114,5 +114,28 @@ public class PolicyService : IPolicyService
             Premium = policy.Premium,
             StartDate = policy.StartDate
         };
+    }
+
+    /// <summary>
+    /// Retrieves all policies within the provided date range.
+    /// </summary>
+    /// <param name="startDate">The start date of the date range.</param>
+    /// <param name="endDate">The end date of the date range.</param>
+    /// <param name="cancellationToken">An optional cancellation token to be forwarded to any subsequent async operations.</param>
+    /// <returns>Returns a list of ExportDto.</returns>
+    public async Task<IList<ExportDto>> ExportDataAsync(DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Policies
+            .Where(x => x.StartDate >= startDate && x.StartDate <= endDate)
+            .Select(x => new ExportDto
+            {
+                PolicyNumber = x.PolicyNumber,
+                Premium = x.Premium,
+                StartDate = x.StartDate,
+                Notes = x.Notes
+                    .Select(y => y.Text)
+                    .ToList()
+            })
+            .ToListAsync(cancellationToken);
     }
 }
