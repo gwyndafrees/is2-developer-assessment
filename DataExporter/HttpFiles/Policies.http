@@ -14,3 +14,23 @@ GET {{baseUrl}}/Policies/{{nonExistentPolicyId}}
 
 ### GetPolicies - 200
 GET {{baseUrl}}/Policies
+
+### PostPolicies - 200
+POST {{baseUrl}}/Policies
+Content-Type: application/json
+
+{
+  "policyNumber": "12345",
+  "premium": 50,
+  "startDate": "2024-09-04T00:00:00.000Z"
+}
+
+### PostPolicies - 400
+POST {{baseUrl}}/Policies
+Content-Type: application/json
+
+{
+  "policyNumber": null,
+  "premium": 50,
+  "startDate": "2024-09-04T00:00:00.000Z"
+}
