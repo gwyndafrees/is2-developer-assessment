@@ -2,6 +2,8 @@
 using DataExporter.Model;
 using DataExporter.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace DataExporter.Tests.Services;
 
@@ -9,15 +11,17 @@ public class PolicyServiceTests
 {
     private readonly PolicyService _policyService;
     private readonly ExporterDbContext _dbContext;
+    private readonly ILogger<PolicyService> _logger = Substitute.For<ILogger<PolicyService>>();
     
     public PolicyServiceTests()
     {
         var options = new DbContextOptionsBuilder<ExporterDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .ConfigureWarnings(warnings => warnings.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options;
         
         _dbContext = new ExporterDbContext(options);
-        _policyService = new PolicyService(_dbContext);
+        _policyService = new PolicyService(_dbContext, _logger);
     }
     
     [Fact]
@@ -143,5 +147,67 @@ public class PolicyServiceTests
         
         // Assert
         result.Should().BeEmpty();
+    }
+    
+    [Fact]
+    public async Task CreatePolicyAsync_ShouldReturnReadPolicyDto_WhenPolicyIsCreated()
+    {
+        // Arrange
+        var createPolicyDto = new CreatePolicyDto
+        {
+            PolicyNumber = "123",
+            Premium = 100,
+            StartDate = DateTime.Now
+        };
+        
+        // Act
+        var result = await _policyService.CreatePolicyAsync(createPolicyDto);
+        
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().BeOfType<ReadPolicyDto>();
+        result.PolicyNumber.Should().Be(createPolicyDto.PolicyNumber);
+        result.Premium.Should().Be(createPolicyDto.Premium);
+        result.StartDate.Should().Be(createPolicyDto.StartDate);
+    }
+    
+    [Fact]
+    public async Task CreatePolicyAsync_ShouldReturnNull_WhenPolicyCreationFails()
+    {
+        // Arrange
+        var createPolicyDto = new CreatePolicyDto
+        {
+            PolicyNumber = null!,
+            Premium = 100,
+            StartDate = DateTime.Now
+        };
+        
+        // Act
+        var result = await _policyService.CreatePolicyAsync(createPolicyDto);
+        
+        // Assert
+        result.Should().BeNull();
+    }
+    
+    [Fact]
+    public async Task CreatePolicyAsync_ShouldLogError_WhenPolicyCreationFails()
+    {
+        // Arrange
+        var createPolicyDto = new CreatePolicyDto
+        {
+            PolicyNumber = null!,
+            Premium = 100,
+            StartDate = DateTime.Now
+        };
+        
+        await _dbContext.SaveChangesAsync();
+        
+        // Act
+        Func<Task> act = async () => await _policyService.CreatePolicyAsync(createPolicyDto);
+        
+        // Assert
+        await act.Should().NotThrowAsync<Exception>();
+        _logger.Received().Log(LogLevel.Error, Arg.Any<EventId>(), Arg.Any<object>(), Arg.Any<Exception>(),
+            Arg.Any<Func<object, Exception, string>>()!);
     }
 }

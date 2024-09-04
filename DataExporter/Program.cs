@@ -11,6 +11,10 @@ namespace DataExporter
             // Add services to the container.
 
             builder.Services.AddControllers();
+            
+            builder.Logging.ClearProviders();
+            builder.Logging.AddConsole();
+            
             builder.Services.AddDbContext<ExporterDbContext>();
             builder.Services.AddScoped<IPolicyService, PolicyService>();
 

@@ -10,15 +10,16 @@ namespace DataExporter.Controllers
     {
         private readonly IPolicyService _policyService;
 
-        public PoliciesController(IPolicyService policyService) 
-        { 
+        public PoliciesController(IPolicyService policyService)
+        {
             _policyService = policyService;
         }
 
         [HttpPost]
         public async Task<IActionResult> PostPolicies([FromBody]CreatePolicyDto createPolicyDto)
-        {         
-            return Ok();
+        {
+            var result = await _policyService.CreatePolicyAsync(createPolicyDto);
+            return result != null ? Ok(result) : BadRequest();
         }
         
         [HttpGet]
