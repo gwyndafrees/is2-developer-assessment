@@ -24,6 +24,8 @@ public class PolicyService : IPolicyService
     /// <returns>Returns a ReadPolicyDto representing the new policy, if succeeded. Returns null, otherwise.</returns>
     public async Task<ReadPolicyDto?> CreatePolicyAsync(CreatePolicyDto createPolicyDto, CancellationToken cancellationToken = default)
     {
+        // Transactions don't work with in-memory databases, but using a transaction regardless for the sake of demonstration with the
+        // assumption that the scenario uses an in-memory database for the sake of simplicity, not as a technical requirement
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         
         try
